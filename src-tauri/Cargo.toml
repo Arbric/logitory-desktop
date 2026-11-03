@@ -1,0 +1,26 @@
+[package]
+name = "logitory"
+version = "1.0.0"
+description = "Logitory desktop app"
+authors = ["Logitory LLC"]
+license = "Proprietary"
+edition = "2021"
+
+[lib]
+# The library name differs from the package name so it doesn't clash with the binary on Windows.
+name = "logitory_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+# Smaller, faster release builds.
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

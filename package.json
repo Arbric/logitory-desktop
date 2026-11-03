@@ -1,0 +1,15 @@
+{
+  "name": "logitory-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Logitory for Windows, macOS and Linux: a Tauri window on https://logitory.io/login/.",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "icons": "tauri icon app-icon.png",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
