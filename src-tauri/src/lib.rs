@@ -8,6 +8,23 @@
 use tauri::webview::NewWindowResponse;
 use tauri::{Url, WebviewWindowBuilder};
 
+// Pages that open inside the Logitory window: the app itself (logitory.io), Logitory's Supabase
+// project (sign-in links and redirects) and Stripe (Checkout and the billing portal). Every other
+// page goes to the default browser, which shows its address, so a look-alike sign-in page can't pass
+// for Logitory in this window without an address bar (security audit finding 13).
+const IN_APP_SITES: &[&str] = &["logitory.io", "stripe.com"];
+const IN_APP_HOSTS: &[&str] = &["nddjgpzdqjbkcvrimbql.supabase.co"];
+
+fn opens_in_app(url: &Url) -> bool {
+    url.scheme() == "https"
+        && url.host_str().is_some_and(|host| {
+            IN_APP_HOSTS.contains(&host)
+                || IN_APP_SITES
+                    .iter()
+                    .any(|site| host == *site || host.ends_with(&format!(".{site}")))
+        })
+}
+
 // Hands a link to the operating system (default browser, mail app, …).
 fn open_outside(url: &Url) {
     if let Err(err) = tauri_plugin_opener::open_url(url.as_str(), None::<&str>) {
@@ -40,9 +57,10 @@ pub fn run() {
                     open_outside(&url);
                     NewWindowResponse::Deny
                 })
-                // mailto: / tel: links: the mail or phone app; web pages stay in the window.
+                // Logitory and Stripe pages stay in the window; any other page opens in the default
+                // browser, and mailto: / tel: links in the mail or phone app.
                 .on_navigation(|url| {
-                    if matches!(url.scheme(), "http" | "https") {
+                    if opens_in_app(url) {
                         true
                     } else {
                         open_outside(url);
@@ -54,4 +72,33 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running Logitory");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::opens_in_app;
+    use tauri::Url;
+
+    fn inside(url: &str) -> bool {
+        opens_in_app(&Url::parse(url).unwrap())
+    }
+
+    #[test]
+    fn logitory_stripe_and_the_project_stay_in_the_window() {
+        assert!(inside("https://logitory.io/login/"));
+        assert!(inside("https://logitory.io/sandbox/?access=x"));
+        assert!(inside("https://checkout.stripe.com/c/pay/cs_test"));
+        assert!(inside("https://billing.stripe.com/p/session/x"));
+        assert!(inside("https://nddjgpzdqjbkcvrimbql.supabase.co/auth/v1/verify?token=x"));
+    }
+
+    #[test]
+    fn everything_else_goes_to_the_browser() {
+        assert!(!inside("https://logitory-login.evil/"));
+        assert!(!inside("https://logitory.io.evil.com/login/"));
+        assert!(!inside("https://evillogitory.io/"));
+        assert!(!inside("https://attacker.supabase.co/"));
+        assert!(!inside("http://logitory.io/login/"));
+        assert!(!inside("https://google.com/"));
+    }
 }
