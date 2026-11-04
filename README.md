@@ -35,8 +35,9 @@ The web app itself updates without a new release.
 - **Google / Microsoft / company SSO sign-in** opens the provider's page inside the window. Microsoft and
   most SSO providers work; Google may refuse sign-in from an embedded window, in which case use email and
   password (or a browser).
-- **Links that open a new tab** (Pay Invoice, Privacy Policy, Stripe pages): check that they open; if not,
-  they can be sent to the system browser with Tauri's opener plugin.
+- **Links that open a new tab** (Privacy Policy, Pay Invoice, Stripe receipts) open in the computer's default
+  browser, and mail / phone links (support@logitory.io) in its mail or phone app (`src-tauri/src/lib.rs`,
+  Tauri's opener plugin). Everything else stays in the Logitory window.
 - **Code signing**: unsigned Windows installers show a SmartScreen warning. A code-signing certificate
   (set in `bundle.windows`) removes it.
 - **Desktop updates**: only needed when this shell changes (icon, window, Tauri version). Tauri's updater
