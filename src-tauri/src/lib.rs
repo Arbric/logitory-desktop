@@ -18,7 +18,14 @@ fn open_outside(url: &Url) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
+        // Only the Rust side of the opener is used. Its page script (on by default) catches link
+        // clicks and asks the app over IPC, which logitory.io isn't allowed to do, so the click was
+        // swallowed; with it off, links reach on_new_window / on_navigation below.
+        .plugin(
+            tauri_plugin_opener::Builder::new()
+                .open_js_links_on_click(false)
+                .build(),
+        )
         .setup(|app| {
             let config = app
                 .config()
